@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Johtaminen – tenttiharjoitus</title>
+<style>
+  :root{
+    --bg:#f6f4ef; --card:#ffffff; --ink:#1f2328; --muted:#6b6f76; --line:#e2ded5;
+    --accent:#1f4e79; --accent-soft:#e7eef6; --ok:#2e7d4f; --ok-soft:#e5f4e4; --bad:#b3261e; --bad-soft:#fbebeb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{max-width:860px;margin:0 auto;padding:28px 20px 8px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:.92rem;margin:0}
+  main{max-width:860px;margin:0 auto;padding:12px 20px 48px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0 18px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+  .seg button{border:0;background:none;padding:8px 14px;font:inherit;cursor:pointer;color:var(--ink)}
+  .seg button.on{background:var(--accent);color:#fff}
+  select,.btn{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn:disabled{opacity:.45;cursor:default}
+  .stats{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin-bottom:10px}
+  .stats b{color:var(--ink)}
+  .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:18px}
+  .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;min-height:260px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .tag{display:inline-block;font-size:.78rem;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:99px;margin-bottom:14px}
+  .retry{display:inline-block;font-size:.78rem;color:var(--bad);background:var(--bad-soft);padding:3px 9px;border-radius:99px;margin:0 0 14px 6px}
+  .term{font-size:1.55rem;font-weight:650;margin:6px 0 10px;line-height:1.3}
+  .def{font-size:1.08rem;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+  .hint{color:var(--muted);font-size:.9rem;margin-top:18px}
+  .flip{cursor:pointer}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .actions .btn{flex:1;min-width:150px;padding:12px}
+  .btn.good{background:var(--ok-soft);border-color:#b9dfc0;color:var(--ok)}
+  .btn.bad{background:var(--bad-soft);border-color:#efc3c0;color:var(--bad)}
+  .q{font-size:1.15rem;font-weight:600;margin:4px 0 16px}
+  .q .big{font-size:1.4rem}
+  .opts{display:grid;gap:10px}
+  .opt{text-align:left;font:inherit;padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;color:var(--ink)}
+  .opt:hover:not(:disabled){border-color:var(--accent)}
+  .opt.correct{background:var(--ok-soft);border-color:var(--ok)}
+  .opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+  .opt:disabled{cursor:default}
+  .feedback{margin-top:14px;font-size:.95rem}
+  .feedback.ok{color:var(--ok)} .feedback.no{color:var(--bad)}
+  .done{text-align:center;padding:30px 10px}
+  .done h2{margin:0 0 8px}
+  .list{margin-top:14px;text-align:left;font-size:.92rem;color:var(--muted)}
+  .search{flex:1;min-width:180px;font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+  .read h2{font-size:1.15rem;margin:28px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent);color:var(--accent)}
+  .read h2:first-child{margin-top:0}
+  .read dl{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .read .row{padding:12px 18px;border-top:1px solid var(--line)}
+  .read .row:first-child{border-top:0}
+  .read dt{font-weight:650;margin-bottom:2px}
+  .read dd{margin:0;color:#3a3f45}
+  .read .toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .read .toc a{font-size:.85rem;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:99px;text-decoration:none}
+  .read .empty{color:var(--muted)}
+  .picked{margin:0 0 12px;padding-left:24px}
+  .picked li{padding:6px 10px;margin:4px 0;border-radius:8px}
+  .picked li.ok{background:var(--ok-soft)} .picked li.bad{background:var(--bad-soft)}
+  .shown{margin:10px 0 0;padding-left:22px;font-weight:500;font-size:1rem}
+  .shown li{margin:3px 0}
+  .opts.pair{grid-template-columns:1fr 1fr}
+  @media (max-width:560px){.opts.pair{grid-template-columns:1fr}}
+  footer{max-width:860px;margin:0 auto;padding:0 20px 30px;color:var(--muted);font-size:.82rem}
+  kbd{font:12px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 5px;background:#fff}
+  @media (max-width:560px){.card{padding:20px}.term{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Johtaminen – tenttiharjoitus</h1>
+  <p class="sub">Viitala & Jylhä: <i>Johtaminen – keskeiset käsitteet, teoriat ja trendit</i> (Edita 2019)</p>
+</header>
+<main>
+  <div class="controls">
+    <div class="seg" id="modeSeg">
+      <button data-mode="cards" class="on">Kertauskortit</button>
+      <button data-mode="mc">Monivalinta</button>
+      <button data-mode="models">Mallit</button>
+      <button data-mode="pairs">Vertailuparit</button>
+      <button data-mode="read">Lukulista</button>
+    </div>
+    <div class="seg" id="dirSeg" title="Kysymyksen suunta">
+      <button data-dir="term" class="on">Termi → selitys</button>
+      <button data-dir="def">Selitys → termi</button>
+      <button data-dir="mix">Sekaisin</button>
+    </div>
+    <select id="deck" aria-label="Valitse aihealue"></select>
+    <button class="btn" id="shuffle">🔀 Sekoita ja aloita alusta</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div id="stage"></div>
+</main>
+<footer>
+  Väärin menneet tehtävät palaavat jonoon neljän tehtävän päästä, kunnes osaat ne. Pikanäppäimet: kortit <kbd>välilyönti</kbd> käännä, <kbd>1</kbd> osasin, <kbd>2</kbd> en osannut · muut <kbd>1</kbd>–<kbd>4</kbd> vastaa, <kbd>Enter</kbd> seuraava.<br>
+  Termit ja niiden ryhmittely ovat kirjasta. Selitykset on kirjoitettu tiivistetysti yleisen johtamiskirjallisuuden pohjalta, joten tarkista tarvittaessa kirjasta, miten kirja itse asian muotoilee.
+</footer>
+
+<script>
+const PARTS = {
+  I:"I Johtaminen tieteenalana, toimintana ja taitoina",
+  II:"II Liiketoiminnan johtaminen",
+  III:"III Sisäisen tehokkuuden johtaminen",
+  IV:"IV Henkilöstövoimavarojen johtaminen",
+  V:"V Kasvu, kansainvälistyminen ja kestävä kehitys",
+  T:"Kirjan teemat ja trendit"
+};
+
+const DATA = [
+// ---------- I ----------
+["I","Asioiden johtaminen (management)","Toiminnan suunnittelua, organisointia, resurssien ohjausta ja seurantaa tavoitteiden saavuttamiseksi."],
+["I","Ihmisten johtaminen (leadership)","Ihmisiin vaikuttamista: suunnan näyttämistä, innostamista, motivointia ja tukemista vuorovaikutuksessa."],
+["I","Itsensä johtaminen","Oman toiminnan, ajankäytön, jaksamisen, osaamisen ja kehittymisen tietoista ohjaamista."],
+["I","Johtaminen tieteenä, toimintana, ammattina ja taiteena","Johtamista voi tarkastella tutkittuna tieteenalana, käytännön toimintana, ammattina ja intuitiota ja luovuutta vaativana taiteena."],
+["I","Autoritäärinen johtajuus","Johtaja tekee päätökset yksin ja ohjaa käskyin; alaisten osallistuminen on vähäistä."],
+["I","Demokraattinen johtajuus","Työntekijät osallistuvat päätöksentekoon, ja johtaja hyödyntää heidän näkemyksiään."],
+["I","Vakauden ja muutoksen aikaansaaminen","Johtamisen kaksoistehtävä: varmistaa toiminnan jatkuvuus ja ennustettavuus sekä samalla uudistaa toimintaa."],
+["I","Strateginen johtaminen","Organisaation pitkän aikavälin suunnan, päämäärien, valintojen ja kilpailuedun johtamista."],
+["I","Operatiivinen johtaminen","Päivittäisen toiminnan johtamista ja strategian toimeenpanoa käytännön tekemiseksi."],
+["I","Johtajan roolit (Mintzberg)","Johtajalla on ihmissuhderooleja, tiedonkäsittelijän rooleja ja päätöksentekorooleja."],
+["I","Johtamisen kompetenssit","Johtajan osaaminen: kognitiiviset taidot, ihmissuhdetaidot, liiketoimintataidot ja strategiset taidot."],
+["I","Piirreteoreettinen näkökulma","Ajatus, että hyvä johtajuus selittyy johtajan persoonallisuuspiirteillä ja ominaisuuksilla."],
+["I","Organisaatiokäsitys","Käsitys siitä, millainen organisaatio on ja miten se toimii; ohjaa sitä, miten organisaatiota johdetaan."],
+["I","Avoin systeemi","Organisaatio nähdään ympäristönsä kanssa jatkuvassa vuorovaikutuksessa olevana kokonaisuutena (panokset → toiminta → tuotokset)."],
+["I","Asemavalta","Valta, joka perustuu muodolliseen asemaan organisaatiossa, esim. oikeus palkita, rangaista ja päättää."],
+["I","Henkilökohtainen valta","Valta, joka perustuu henkilön asiantuntemukseen, karismaan ja muiden arvostukseen."],
+["I","Valta muiden yli vs. valta yhdessä","Hierarkkinen, kontrolliin perustuva valta vs. jaettu, yhteistyöhön ja luottamukseen perustuva valta."],
+["I","Pelolla johtaminen","Johtamistapa, jossa ohjataan uhkailun ja pelon avulla; heikentää luottamusta, aloitteellisuutta ja oppimista."],
+["I","Tieteellinen liikkeenjohto (Taylor)","Työn tehostaminen mittaamalla ja standardoimalla työvaiheet; työn suunnittelu erotetaan sen tekemisestä."],
+["I","Fordismi","Massatuotannon malli: liukuhihna, pitkälle viety työnjako ja standardoidut tuotteet."],
+["I","Hallinnollinen koulukunta","Klassinen suuntaus (esim. Fayol, Weber), joka kehitti yleisiä johtamisen periaatteita ja byrokratiamallin."],
+["I","Ihmissuhdekoulukunta","Korosti työntekijöiden sosiaalisia tarpeita, ryhmää ja huomiota tuottavuuden lähteenä (Hawthorne-tutkimukset)."],
+["I","Tilanneteoreettinen koulukunta","Ei ole yhtä parasta tapaa johtaa tai organisoida; ratkaisun on sovittava tilanteeseen ja ympäristöön."],
+["I","Sosiotekninen koulukunta","Teknisen järjestelmän ja ihmisten sosiaalisen järjestelmän yhteensovittaminen, esim. itseohjautuvat ryhmät."],
+["I","Organisaatiokulttuuriteoreettinen koulukunta","Selittää organisaation toimintaa ja menestystä yhteisillä arvoilla, normeilla ja uskomuksilla."],
+["I","Oppivan organisaation koulukunta","Painottaa organisaation kykyä oppia, uudistua ja kehittää toimintaansa jatkuvasti."],
+["I","Strategisen johtamisen koulukunta","Tutkii, miten organisaatio tekee strategisia valintoja ja saavuttaa kilpailuedun."],
+["I","VUCA","Toimintaympäristön kuvaus: epävakaus (volatility), epävarmuus (uncertainty), monimutkaisuus (complexity) ja monitulkintaisuus (ambiguity)."],
+["I","Teal-organisaatio (Laloux)","Ideaalimalli, jonka periaatteet ovat itseohjautuvuus, ihminen kokonaisuutena ja kehittyvä tarkoitus; johtajuus on jaettua."],
+["I","Palveleva johtaminen (servant leadership)","Johtaja palvelee ja tukee työntekijöitä, jotta he voivat onnistua ja kasvaa."],
+["I","Mahdollistava johtaminen","Johtaja luo edellytykset onnistumiselle, poistaa esteitä ja antaa tilaa itseohjautuvuudelle."],
+
+// ---------- II ----------
+["II","Missio","Organisaation perustehtävä: miksi se on olemassa."],
+["II","Visio","Tavoiteltu tulevaisuuden tila: mihin organisaatio haluaa päästä."],
+["II","Arvot","Toimintaa ja valintoja ohjaavat periaatteet."],
+["II","Liikeidea","Tiivis kuvaus siitä, mitä yritys tarjoaa, kenelle ja miten."],
+["II","Liiketoimintamalli","Kuvaus siitä, miten yritys luo, toimittaa ja kerää arvoa eli ansaitsee rahaa."],
+["II","Liiketoimintakanvaasi","Yhdeksänosainen pohja: arvolupaus, asiakasryhmät, asiakassuhteet, jakelukanavat, resurssit, toiminnot, kumppanit, kulurakenne, tulovirrat."],
+["II","Strategia","Valinnat siitä, miten organisaatio saavuttaa päämääränsä ja kilpailuedun muuttuvassa ympäristössä."],
+["II","Liiketoimintastrategia vs. toiminnalliset strategiat","Liiketoimintastrategia linjaa koko liiketoiminnan suunnan; toiminnalliset strategiat (esim. henkilöstö-, markkinointi-) tukevat sitä."],
+["II","Resurssiperustainen strategia-ajattelu","Kilpailuetu syntyy yrityksen omista ainutlaatuisista resursseista ja kyvykkyyksistä."],
+["II","VRIO-analyysi","Resurssin arviointi: onko se arvokas (Value), harvinainen (Rarity), vaikeasti jäljiteltävä (Imitability) ja hyödynnetäänkö sitä organisaatiossa (Organization)."],
+["II","Ydinkyvykkyys / ydinosaaminen","Ainutlaatuinen osaamisyhdistelmä, joka luo asiakasarvoa ja jota kilpailijoiden on vaikea jäljitellä (Prahalad & Hamel)."],
+["II","Dynaaminen kyvykkyys","Kyky uudistaa, yhdistellä ja muokata resursseja ja osaamista ympäristön muuttuessa."],
+["II","Kilpailuetu","Asia, jonka ansiosta yritys menestyy kilpailijoita paremmin, esim. alhaisemmat kustannukset tai ainutlaatuinen tarjooma."],
+["II","Strateginen joustavuus ja ketteryys","Kyky muuttaa suuntaa ja toimintaa nopeasti, kokeilla ja oppia."],
+["II","Avoin strategiatyö","Henkilöstö ja sidosryhmät osallistuvat laajasti strategian laatimiseen (yhteiskehittely)."],
+["II","Strategia käytäntönä (strategiointi)","Strategia nähdään asiana, jota ihmiset tekevät arjessa, ei vain johdon laatimana suunnitelmana."],
+["II","Hyperkilpailu","Nopeasti muuttuva kilpailutilanne, jossa kilpailuedut ovat lyhytaikaisia."],
+["II","Skenaario","Johdonmukainen kuvaus mahdollisesta tulevaisuudesta; skenaarioilla varaudutaan useisiin vaihtoehtoihin yhden ennusteen sijaan."],
+["II","Heikot signaalit (Ansoff)","Epätarkkoja, varhaisia merkkejä tulevista muutoksista; voivat olla mahdollisuuksia tai uhkia."],
+["II","SWOT-analyysi","Sisäiset vahvuudet ja heikkoudet sekä ulkoiset mahdollisuudet ja uhat."],
+["II","PESTE-analyysi","Toimintaympäristön makrotekijät: poliittiset, ekonomiset, sosiaaliset, teknologiset ja ekologiset."],
+["II","Porterin viiden kilpailuvoiman malli","Toimialan kilpailu: alan sisäinen kilpailu, uudet tulokkaat, korvaavat tuotteet, ostajien ja toimittajien neuvotteluvoima."],
+["II","Milesin ja Snow'n strategiatypologia","Strategiatyypit: puolustaja, etsijä, analysoija ja reagoija."],
+["II","Porterin peruskilpailustrategiat","Kustannusjohtajuus, differointi (erilaistaminen) ja keskittyminen kapeaan segmenttiin."],
+["II","Treacyn ja Wierseman positiointiteoria","Valitaan yksi arvoperusta: operatiivinen erinomaisuus, asiakaskeskeisyys tai tuotejohtajuus."],
+["II","Bostonin matriisi","Tuotteet markkinaosuuden ja markkinoiden kasvun mukaan: tähdet, lypsylehmät, kysymysmerkit ja koirat."],
+["II","Lypsylehmä (Bostonin matriisi)","Suuri markkinaosuus hitaasti kasvavilla markkinoilla; tuottaa kassavirtaa."],
+["II","Ansoffin matriisi","Kasvustrategiat: markkinapenetraatio, markkinakehitys, tuotekehitys ja diversifiointi."],
+["II","Sinisen meren strategia (Kim & Mauborgne)","Luodaan uutta, kilpailematonta markkinatilaa sen sijaan, että kilpaillaan ankarasti nykyisillä markkinoilla."],
+["II","Arvokäyrä","Sinisen meren strategian työkalu, jolla kuvataan, miten tarjooma eroaa kilpailijoista eri kilpailutekijöissä."],
+["II","Arvoketju","Porterin malli yrityksen arvoa luovista toiminnoista (pää- ja tukitoiminnot)."],
+["II","Liiketoimintaekosysteemi","Toisistaan riippuvaisten toimijoiden verkosto, joka luo arvoa yhdessä."],
+["II","Alustatalous","Digitaalinen alusta yhdistää eri osapuolia (esim. ostajat ja myyjät) ja luo arvoa niiden välisestä vaihdannasta."],
+["II","Jakamistalous","Hyödykkeiden ja palvelujen yhteiskäyttö ja vuokraus omistamisen sijaan, usein alustan välityksellä."],
+["II","Rakenteellinen, relationaalinen ja kognitiivinen pääoma","Yhteistyösuhteiden pääoma: suhdeverkoston rakenne, luottamus ja sitoutuminen sekä yhteinen kieli ja ymmärrys."],
+["II","Barnesin viiden E:n malli","Asiakkaan ympäristö, odotukset, tunteet, kokemukset ja sitoutuminen."],
+["II","Asiakaspolku","Asiakkaan kulku kaikkien kohtaamisten läpi ennen ostoa, sen aikana ja sen jälkeen."],
+["II","Asiakasarvo","Asiakkaan kokema hyöty suhteessa uhrauksiin (hinta, vaiva, aika)."],
+["II","Asiakkuuden elinkaari","Asiakassuhteen vaiheet hankinnasta kehittämiseen, säilyttämiseen ja mahdolliseen päättymiseen."],
+["II","Nettosuositteluindeksi (NPS)","Mittari: kuinka todennäköisesti asiakas suosittelisi yritystä; suosittelijoiden osuus miinus arvostelijoiden osuus."],
+["II","4P-malli","Markkinoinnin kilpailukeinot: tuote, hinta, saatavuus ja markkinointiviestintä."],
+["II","Sisältömarkkinointi ja inbound-markkinointi","Asiakkaat houkutellaan hyödyllisellä sisällöllä sen sijaan, että heitä tavoitellaan mainonnalla."],
+["II","Avoin innovaatio","Innovaatioita kehitetään yhdessä ulkopuolisten kanssa, ja ideoita tuodaan organisaatioon ja viedään siitä ulos."],
+["II","Liiketoimintamalli-innovaatio","Uudistetaan tapaa, jolla arvoa luodaan ja ansaitaan, ei vain tuotetta."],
+["II","Muotoiluajattelu (design thinking)","Ihmislähtöinen kehittämistapa: asiakkaan ymmärtäminen, ideointi, prototypointi ja testaus."],
+["II","Palvelumuotoilu","Palvelujen kehittäminen asiakkaan kokemuksen ja tarpeiden pohjalta muotoilun menetelmin."],
+["II","Disruptiivinen (käänteentekevä) innovaatio","Innovaatio, joka mullistaa markkinat, usein aluksi yksinkertaisempana tai halvempana ratkaisuna (Christensen)."],
+
+// ---------- III ----------
+["III","Johtamisjänne","Esimiehen suoraan johtamien alaisten määrä."],
+["III","Delegointi","Tehtävien ja päätösvallan siirtäminen alemmalle tasolle; vastuu tuloksista säilyy myös delegoijalla."],
+["III","Hajauttaminen vs. keskittäminen","Päätösvalta jaetaan organisaation eri tasoille tai kootaan ylimmälle johdolle."],
+["III","Päätöksentekoprosessi","Vaiheittainen eteneminen: ongelman tunnistaminen, tiedon keruu, vaihtoehdot, arviointi, valinta, toteutus ja seuranta."],
+["III","Dialogikyvykkyys","Kyky käydä aitoa, kuuntelevaa ja yhteistä ymmärrystä rakentavaa keskustelua."],
+["III","Thomas–Kilmannin konfliktimalli","Viisi konfliktityyliä itsevarmuuden ja yhteistyöhalukkuuden mukaan: kilpailu, yhteistyö, kompromissi, välttely ja mukautuminen."],
+["III","Osallistaminen ja valtaistaminen (empowerment)","Työntekijöille annetaan valtaa, vastuuta ja välineitä vaikuttaa omaan työhönsä ja päätöksiin."],
+["III","Tiedolla johtaminen","Päätöksenteko perustuu todennettuun tietoon, ja tietoa hankitaan, jalostetaan ja jaetaan järjestelmällisesti."],
+["III","Analytiikan neljä tasoa","Kuvaileva (mitä tapahtui), diagnosoiva (miksi), ennustava (mitä tapahtuu) ja ohjaava (mitä pitäisi tehdä)."],
+["III","Hiljainen tieto","Kokemukseen perustuva, vaikeasti sanallistettava tieto; vastakohta näkyvä eli eksplisiittinen tieto."],
+["III","Virallinen vs. epävirallinen organisaatio","Organisaatiokaavion mukainen rakenne vs. ihmisten todelliset suhteet, verkostot ja vaikutusvalta."],
+["III","Linjaorganisaatio","Selkeä hierarkia, jossa käskyt kulkevat ylhäältä alas ja jokaisella on yksi esimies."],
+["III","Toimintokohtainen organisaatio","Jako toimintojen mukaan (esim. tuotanto, myynti, talous)."],
+["III","Matriisiorganisaatio","Kaksi ohjauslinjaa yhtä aikaa (esim. toiminto ja tuote/alue); työntekijällä voi olla kaksi esimiestä."],
+["III","Prosessiorganisaatio","Organisoidaan asiakkaalle arvoa tuottavien prosessien ympärille toimintojen rajat ylittäen."],
+["III","Projektiorganisaatio","Määräaikainen organisaatio tietyn tehtävän toteuttamiseksi; selkeä alku, loppu ja tavoite."],
+["III","Tiimiorganisaatio","Työ organisoidaan itseohjautuviin tai puoliautonomisiin tiimeihin; edellyttää moniosaamista."],
+["III","Modulaarinen ja virtuaalinen organisaatio","Toimintoja ulkoistetaan ja yhdistellään verkostona; virtuaaliorganisaatio toimii pitkälti tietoverkkojen varassa."],
+["III","Osaoptimointi","Yksikkö optimoi omaa tulostaan koko organisaation edun kustannuksella."],
+["III","Työn rikastaminen vs. laajentaminen","Rikastaminen lisää vastuuta ja vaativuutta (vertikaalinen); laajentaminen lisää samantasoisia tehtäviä (horisontaalinen)."],
+["III","Työkierto","Työntekijä siirtyy suunnitellusti tehtävästä toiseen osaamisen ja joustavuuden lisäämiseksi."],
+["III","Malli työn piirteistä (Hackman & Oldham)","Työn motivoivuus: taitojen monipuolisuus, tehtäväkokonaisuus, tehtävän merkitys, autonomia ja palaute."],
+["III","Sisäinen yrittäjyys","Työntekijä toimii yrittäjämäisesti oma-aloitteisesti ja vastuullisesti organisaation sisällä."],
+["III","Strategiaprosessi","Suunnan määrittäminen, strategian muotoilu, toiminnallistaminen ja toteutumisen arviointi."],
+["III","Tavoite- ja tulosjohtaminen","Tavoitteet johdetaan strategiasta eri tasoille, ja tuloksia seurataan ja arvioidaan niitä vasten."],
+["III","ERP-järjestelmä","Toiminnanohjausjärjestelmä, joka yhdistää esim. myynnin, logistiikan, tuotannon ja talouden tiedot."],
+["III","Kriisiviestintä","Viestintä poikkeus- ja kriisitilanteissa: nopeaa, avointa ja johdonmukaista."],
+["III","Vesiputousmalli vs. ketterä kehitys","Vaiheittainen, ennalta suunniteltu kehitys vs. iteratiivinen, lyhyissä sykleissä etenevä kehitys (esim. scrum)."],
+["III","Porttimalli (stage-gate)","Tuotekehitys etenee vaiheittain, ja jokaisen vaiheen jälkeen päätetään portilla jatkosta."],
+["III","Scrum","Ketterä menetelmä: työ tehdään lyhyissä sprinteissä, ja tiimi on itseohjautuva."],
+["III","Lean-johtaminen","Asiakasarvon maksimointi ja hukan poistaminen jatkuvalla parantamisella."],
+["III","Kaizen","Jatkuva, pienin askelin tapahtuva parantaminen, johon kaikki osallistuvat."],
+["III","Kanban","Imuohjauksen ja työn näkyväksi tekemisen menetelmä (kortit/taulu)."],
+["III","Six Sigma","Tilastollinen laatumenetelmä prosessin vaihtelun ja virheiden vähentämiseksi."],
+["III","5S","Sortteeraa, systematisoi, siivoa, standardoi, seuraa – työympäristön järjestysmenetelmä."],
+["III","ABC-analyysi","Nimikkeiden luokittelu arvon tai volyymin mukaan, jotta hallinta voidaan kohdistaa tärkeimpiin."],
+["III","Varaston kiertonopeus","Kuinka monta kertaa varasto vaihtuu tietyssä ajassa; kertoo varastoinnin tehokkuudesta."],
+["III","Robotiikka ja tekoäly","Ohjelmisto- ja teollisuusrobotit automatisoivat rutiineja; tekoäly oppii datasta ja tukee päätöksiä."],
+["III","Burken ja Litwinin malli","Suoriutumisen ja muutoksen kausaalimalli: ympäristö, strategia, johtajuus ja kulttuuri vaikuttavat suorituskykyyn."],
+["III","EFQM","Eurooppalainen laatupalkintomalli organisaation toiminnan ja tulosten arviointiin."],
+["III","Tasapainotettu tuloskortti (BSC)","Kaplan & Norton: taloudellinen, asiakas-, prosessi- sekä oppimisen ja kehittymisen näkökulma."],
+["III","Johdon (sisäinen) vs. ulkoinen laskentatoimi","Sisäinen tuottaa tietoa johdon päätöksentekoon; ulkoinen (kirjanpito, tilinpäätös) raportoi ulkoisille sidosryhmille."],
+["III","Kannattavuus vs. tuottavuus","Kannattavuus = tuotot suhteessa kustannuksiin; tuottavuus = tuotos suhteessa panoksiin."],
+["III","Kiinteät ja muuttuvat kustannukset","Kiinteät eivät muutu tuotantomäärän mukaan (esim. vuokra); muuttuvat muuttuvat (esim. raaka-aineet)."],
+["III","Katetuotto","Myyntituotot vähennettynä muuttuvilla kustannuksilla; jäljelle jäävä osa kattaa kiinteät kulut."],
+["III","Kriittinen piste","Myynnin määrä, jolla tulos on nolla eli katetuotto kattaa juuri kiinteät kustannukset."],
+["III","Hintajousto","Kuinka paljon kysyntä muuttuu, kun hinta muuttuu."],
+["III","Elinkaarikustannus","Investoinnin kokonaiskustannukset hankinnasta käytön kautta poistoon asti."],
+["III","Osaamisen hankinnan keinot","Osaamista kehitetään, ostetaan, lainataan, sitoutetaan ja siirretään."],
+["III","Ydinosaaminen, perusosaaminen ja tukiosaaminen","Kilpailuedun luova ainutlaatuinen osaaminen, toiminnan perusedellytys ja toimintaa tukeva osaaminen."],
+["III","Riskienhallinta","Riskien tunnistaminen, analysointi (todennäköisyys × vaikutus) ja hallintakeinojen valinta (esim. välttäminen, pienentäminen, siirtäminen)."],
+
+// ---------- IV ----------
+["IV","Atkinsonin joustavan yrityksen malli","Pysyvä ydinryhmä ja joustava perifeerinen reunaryhmä; toiminnallinen, määrällinen ja taloudellinen joustavuus."],
+["IV","Toiminnallinen vs. määrällinen joustavuus","Henkilöstön monitaitoisuus ja siirrettävyys vs. henkilöstömäärän ja työajan sopeuttaminen tarpeen mukaan."],
+["IV","Henkilöstön monimuotoisuus","Erilaisuus esim. iän, sukupuolen, etnisyyden ja taustan suhteen; voimavara, joka vaatii johtamista."],
+["IV","Sisäinen vs. ulkoinen motivaatio","Tekemisen ilo ja mielenkiinto itse työhön vs. ulkoiset palkkiot ja rangaistukset."],
+["IV","Volitio","Tahdonvoima, joka muuttaa aikomuksen toiminnaksi ja pitää sen yllä."],
+["IV","Maslow'n tarvehierarkia","Fysiologiset tarpeet, turvallisuus, yhteenkuuluvuus, arvostus ja itsensä toteuttaminen."],
+["IV","Herzbergin kaksifaktoriteoria","Hygieniatekijät (palkka, työolot) estävät tyytymättömyyttä; motivaatiotekijät (saavutukset, vastuu, itse työ) motivoivat."],
+["IV","McClellandin suoritusmotivaatioteoria","Ihmisiä motivoivat eri painotuksin suoritus-, valta- ja liittymistarve."],
+["IV","Vroomin odotusarvoteoria","Motivaatio = odotus (ponnistus → tulos) × välineellisyys (tulos → palkkio) × valenssi (palkkion arvo)."],
+["IV","Ryanin ja Decin itseohjautuvuusteoria","Sisäinen motivaatio vahvistuu, kun autonomian, kyvykkyyden ja yhteenkuuluvuuden tarpeet täyttyvät."],
+["IV","Työhyvinvointi","Turvallinen, terveellinen ja tuottava työ, jota tekevät hyvin johdetussa yhteisössä työnsä mielekkääksi kokevat ihmiset."],
+["IV","Työn vaatimusten ja voimavarojen malli","Liian suuret vaatimukset kuormittavat (uupumus); voimavarat, kuten tuki ja vaikutusmahdollisuudet, lisäävät työn imua."],
+["IV","Kompetenssi","Tietojen, taitojen, asenteiden ja kokemuksen yhdistelmä, joka mahdollistaa tehtävästä suoriutumisen."],
+["IV","Elinikäinen oppiminen","Osaamisen jatkuva kehittäminen koko työuran ajan."],
+["IV","Scheinin ura-ankkuriteoria","Uravalintoja ohjaavat ankkurit: autonomia, turvallisuus, haasteellisuus, palvelemisen halu, ammatillinen pätevyys, johtajuus, luovuus/yrittäjyys, elämäntyyli."],
+["IV","Ryhmädynamiikka","Ryhmän sisäiset vuorovaikutusprosessit, roolit ja voimat."],
+["IV","Koheesio","Ryhmän yhteenkuuluvuus ja jäsenten halu pysyä ryhmässä."],
+["IV","Ryhmäajattelu","Yksimielisyyden tavoittelu ohittaa kriittisen arvioinnin, mikä johtaa huonoihin päätöksiin."],
+["IV","Ryhmän kehitysvaiheet","Muodostus-, kuohunta-, vakiintumis-, toiminta- ja irrottautumisvaihe."],
+["IV","Belbinin teoria tiimirooleista","Toimiva tiimi tarvitsee eri rooleja, esim. koordinaattori, luova pohtija, toteuttaja, viimeistelijä, tiimipeluri."],
+["IV","McGregorin X- ja Y-teoria","X: ihmiset välttelevät työtä ja tarvitsevat valvontaa. Y: ihmiset haluavat tehdä työtä ja ottaa vastuuta."],
+["IV","Blaken ja Moutonin johtamisruudukko","Johtamistyylit kiinnostuksesta tuloksiin ja ihmisiin; 9/9 = tehokas johtaminen, 1/1 = piittaamaton."],
+["IV","Transaktionaalinen johtajuus","Vaihtosuhde: johtaja palkitsee sovituista suorituksista ja puuttuu poikkeamiin."],
+["IV","Transformationaalinen (uudistava) johtajuus","Johtaja innostaa visiolla, on esikuva, haastaa ajattelemaan ja tukee yksilöllisesti."],
+["IV","Valmentava johtaminen","Johtaja tukee kysymällä ja kuuntelemalla, auttaa löytämään ratkaisut itse ja kehittymään."],
+["IV","Voimaannuttaminen","Ihmisen oma kokemus vaikutusmahdollisuuksista ja kyvykkyydestä vahvistuu."],
+["IV","Ulrichin malli","Henkilöstöjohtamisen tehtäväalueet: strateginen henkilöstöjohtaminen sekä henkilöstöprosessien ja -käytäntöjen ohjaus ja tukeminen (roolit: strateginen kumppani, hallinnon asiantuntija, henkilöstön tukija, muutosagentti)."],
+["IV","Henkilöstöstrategia","Linjaus siitä, millaista henkilöstöä ja osaamista strategian toteuttaminen vaatii ja miten se varmistetaan."],
+["IV","Perehdyttäminen","Uuden työntekijän johdattaminen työhön, organisaatioon ja työyhteisöön."],
+["IV","Kehityskeskustelu","Esimiehen ja työntekijän säännöllinen keskustelu tavoitteista, suoriutumisesta ja kehittymisestä."],
+["IV","Mentorointi","Kokeneempi henkilö tukee ja ohjaa kokemattomampaa tämän kehittymisessä."],
+["IV","Muutosvastarinta","Muutoksen vastustaminen; taustalla esim. epävarmuus, pelko menetyksistä, tiedon puute tai luottamuksen puute."],
+["IV","Kotterin muutosjohtamisen malli","8 vaihetta: kiireellisyys, muutostiimi, visio, viestintä, esteiden raivaus, nopeat onnistumiset, vakiinnutus, juurruttaminen kulttuuriin."],
+["IV","Argyrisin ja Schönin muutosoppimisen malli","Pintaoppiminen (yksikehäinen) korjaa toimintaa; syvätason (kaksikehäinen) kyseenalaistaa taustaoletukset; lisäksi oppimaan oppiminen."],
+["IV","Organisaation kehittäminen","Suunnitelmallista, pitkäjänteistä toiminnan, rakenteiden ja kulttuurin kehittämistä."],
+["IV","Scheinin teoria organisaatiokulttuurista","Kolme tasoa: artefaktit (näkyvä), arvot ja syvin taso perusoletukset."],
+["IV","Quinnin ja McGrathin teoria","Organisaatiokulttuurit jaetaan neljään tyyppiin kilpailevien arvojen pohjalta (esim. joustavuus vs. kontrolli, sisäinen vs. ulkoinen suuntautuminen)."],
+["IV","Hofsteden teoria kulttuuriin sosiaalistumisesta","Kulttuuri opitaan 'mielen ohjelmointina' perheessä, koulussa ja työssä; syvimmät arvot opitaan varhain."],
+["IV","Sengen oppiva organisaatio","Viisi osa-aluetta: henkilökohtainen mestaruus, yhteiset ajatusmallit, jaettu visio, tiimioppiminen ja systeemiajattelu."],
+["IV","Ilmapiiri","Henkilöstön kokemus työyhteisön tunnelmasta; muuttuu nopeammin kuin syvempi organisaatiokulttuuri."],
+
+// ---------- V ----------
+["V","Orgaaninen vs. epäorgaaninen kasvu","Kasvu omin voimin (myynti, uudet tuotteet) vs. kasvu yritysostoin ja fuusioin."],
+["V","Skaalaetu","Yksikkökustannukset laskevat, kun toiminnan volyymi kasvaa."],
+["V","Franchising","Ketjuttaja antaa yrittäjälle oikeuden käyttää liiketoimintakonseptiaan ja brändiään korvausta vastaan."],
+["V","Yrityksen elinkaari","Syntyvaihe, henkiinjäämisvaihe, menestysvaihe ja kypsyysvaihe."],
+["V","Greinerin malli","Kasvuvaiheet (evoluutio) päättyvät kriiseihin (revoluutio): johtajuuden, autonomian, kontrollin ja byrokratian kriisi sekä uupuminen."],
+["V","Isomorfismi","Organisaatiot alkavat muistuttaa toisiaan esim. jäljittelyn, normien tai pakon vuoksi."],
+["V","Kuolemanlaakso","Start-upin vaihe, jossa rahaa kuluu mutta tulovirta ei vielä riitä; moni yritys kaatuu tähän."],
+["V","Proaktiivinen vs. reaktiivinen kansainvälistyminen","Yritys hakeutuu ulkomaille omasta aloitteestaan vs. reagoi esim. yhteydenottoon tai kotimarkkinan paineeseen."],
+["V","Uppsala-teoria","Kansainvälistyminen etenee vaiheittain: ensin kulttuurisesti läheisille markkinoille ja kevyillä muodoilla, sitten syvemmälle."],
+["V","Kansainvälisen yrittäjyyden teoria (born global)","Yritys voi kansainvälistyä nopeasti heti perustamisestaan lähtien."],
+["V","Hofsteden kulttuuriulottuvuudet","Individualismi–kollektiivisuus, hierarkkisuus (valtaetäisyys)–tasa-arvo, epävarmuuden välttäminen, maskuliinisuus–feminiinisyys, pitkä–lyhyt aikaväli."],
+["V","Trompenaarsin ja Hampden-Turnerin malli","Mm. universalismi–partikularismi, neutraalisuus–tunteellisuus, spesifisyys–diffuusio, saavuttaminen–ansioituminen, aikakäsitys."],
+["V","Universalismi vs. partikularismi","Säännöt pätevät kaikkiin samoin vs. suhteet ja tilanne ratkaisevat (Trompenaars)."],
+["V","Kansainvälinen orientaatio (EPRG)","Kotimaa-, kohdemaa-, alueellinen ja globaali orientaatio."],
+["V","Ekspatriaatti vs. inpatriaatti","Emoyhtiöstä ulkomaille lähetetty työntekijä vs. tytäryhtiöstä emoyhtiön maahan siirretty työntekijä."],
+["V","Hyvä yrityskansalaisuus","Yritys toimii vastuullisena yhteiskunnan jäsenenä lakisääteisten velvoitteiden lisäksi."],
+["V","Kolmoistilinpäätös (triple bottom line)","Yrityksen tulosta arvioidaan taloudellisen, sosiaalisen ja ympäristövastuun kautta."],
+["V","Taloudellinen vastuu","Kannattavuus, kilpailukyky ja taloudellisen hyvinvoinnin tuottaminen sidosryhmille."],
+["V","Sosiaalinen vastuu","Vastuu henkilöstöstä, ihmisoikeuksista, asiakkaista ja yhteisöstä."],
+["V","Ympäristövastuu","Ympäristövaikutusten hallinta ja vähentäminen; ekokilpailukyky."],
+["V","Ympäristöjohtaminen","Järjestelmällinen ympäristöasioiden hallinta, esim. ISO 14001 ja EMAS, elinkaariarviot."],
+["V","Global Compact","YK:n periaatteet vastuulliselle liiketoiminnalle (ihmisoikeudet, työ, ympäristö, korruption vastaisuus)."],
+["V","Sidosryhmäteoria (Freeman)","Yrityksen tulee huomioida kaikki ryhmät, joihin sen toiminta vaikuttaa tai jotka vaikuttavat siihen, ei vain omistajia."],
+["V","Maineen johtaminen","Sidosryhmien mielikuvien ja luottamuksen tietoinen rakentaminen ja suojaaminen."],
+["V","Uusi julkisjohtaminen (NPM)","Julkiselle sektorille tuodaan yksityisen sektorin oppeja: tulosjohtaminen, tehokkuus, kilpailutus."],
+["V","Uusi julkinen palvelu ja uusi julkinen hallinta","NPM:n jälkeiset suuntaukset: kansalaislähtöisyys, verkostot, yhteistyö ja yhteinen arvonluonti."],
+["V","Duaalimalli (julkinen sektori)","Johtaminen jakautuu poliittiseen johtoon ja ammatilliseen virkamiesjohtoon."],
+["V","Monituottajamalli","Julkisia palveluja tuottavat julkiset, yksityiset ja kolmannen sektorin toimijat yhdessä."],
+["V","Kolmas sektori","Yhdistykset, säätiöt ja muut voittoa tavoittelemattomat järjestöt; usein vapaaehtoistyön varassa."],
+
+// ---------- TRENDIT ----------
+["T","Kokonaisvaltainen johtaminen","Kirjan perusajatus: johtaminen ratkaisee menestyksen, ja ilmiö on ymmärrettävä kokonaisuutena."],
+["T","Käskemisestä mahdollistamiseen","Siirtymä 'käske, kontrolloi, korjaa' -mallista ihmislähtöiseen, palvelevaan ja valmentavaan johtamiseen."],
+["T","Itseohjautuvuus ja jaettu johtajuus","Valtaa ja vastuuta siirretään tiimeille ja yksilöille; esim. Teal-organisaatio."],
+["T","Merkityksellisyys ja arvot","Johtamisessa korostuvat selkeä suunta, mielekäs päämäärä ja yhteiset arvot."],
+["T","Ketteryys ja verkostomaisuus","Jäykät hierarkiat väistyvät; tilalle tiimit, prosessit, ekosysteemit ja alustatalous."],
+["T","Johtamisopit aalloissa","Monet 'uudet' opit ovat vanhoja ajatuksia uudessa paketissa; esim. itseohjautuvia tiimejä korostettiin jo 1980-luvulla."],
+["T","Digitalisaatio ja tiedolla johtaminen","Robotiikka, tekoäly, data-analytiikka ja tietojärjestelmät muuttavat työtä ja päätöksentekoa."],
+["T","Joustavuus ja moninaisuus","Erilaiset työsuhteet, etätyö ja monimuotoinen henkilöstö."],
+["T","Hyvinvointi ja osaaminen menestystekijöinä","Työhyvinvointi, motivaatio ja jatkuva oppiminen kilpailukyvyn perustana."],
+["T","Vastuullisuus ja kestävä kasvu","Taloudellinen, sosiaalinen ja ympäristövastuu sekä maine ja sidosryhmät."],
+["T","Ennakointi epäjatkuvassa maailmassa","Tulevaisuus on epäjatkuva: skenaariot, heikot signaalit ja jatkuvasti päivitettävä strategia."]
+];
+
+// ---------- MALLIT: osat ja järjestys ----------
+// ordered:true = osilla on järjestys
+const MODELS = [
+ {p:"IV", name:"Kotterin muutosjohtamisen malli", ordered:true, items:["Luo käsitys muutoksen tarpeellisuudesta","Muodosta muutostiimi","Selvennä muutosvisio","Kommunikoi muutosvisio","Raivaa esteitä muutoksen tieltä","Mahdollista lyhyen aikavälin onnistumiset","Vakiinnuta muutos","Juurruta muutos osaksi organisaatiokulttuuria"]},
+ {p:"IV", name:"Ryhmän kehitysvaiheet", ordered:true, items:["Muodostusvaihe","Kuohuntavaihe","Vakiintumisvaihe","Toimintavaihe","Irrottautumisvaihe"]},
+ {p:"IV", name:"Maslow'n tarvehierarkia (alimmasta ylimpään)", ordered:true, items:["Fysiologiset tarpeet","Turvallisuuden tarve","Yhteenkuuluvuuden tarve","Arvostuksen tarve","Itsensä toteuttaminen"]},
+ {p:"IV", name:"Scheinin organisaatiokulttuurin tasot (pinnasta syvimpään)", ordered:true, items:["Artefaktit","Arvot","Perusoletukset"]},
+ {p:"V", name:"Greinerin malli: kasvuvaiheet", ordered:true, items:["Kasvu luovuuden kautta","Kasvu ohjauksen kautta","Kasvu delegoinnin kautta","Kasvu koordinoinnin kautta","Kasvu yhteistyön kautta"]},
+ {p:"V", name:"Greinerin malli: kriisit", ordered:true, items:["Johtajuuden kriisi","Autonomian kriisi","Kontrollin kriisi","Byrokratian kriisi","Uupumisen kriisi"]},
+ {p:"V", name:"Yrityksen elinkaaren vaiheet", ordered:true, items:["Syntyvaihe","Henkiinjäämisvaihe","Menestysvaihe","Kypsyysvaihe"]},
+ {p:"V", name:"Julkisjohtamisen kehitys", ordered:true, items:["Byrokratia","Uusi julkisjohtaminen (NPM)","Uusi julkinen palvelu / uusi julkinen hallinta"]},
+ {p:"III", name:"Strategiaprosessi", ordered:true, items:["Strategisen päämäärän eli suunnan määrittäminen","Strategian muotoilu","Strategian toiminnallistaminen","Strategian toteutumisen arviointi"]},
+ {p:"III", name:"Analytiikan tasot (yksinkertaisimmasta vaativimpaan)", ordered:true, items:["Kuvaileva analytiikka","Diagnosoiva analytiikka","Ennustava analytiikka","Ohjaava analytiikka"]},
+ {p:"III", name:"5S", ordered:true, items:["Sortteeraa","Systematisoi","Siivoa","Standardoi","Seuraa"]},
+ {p:"III", name:"Vesiputousmallin vaiheet (yleinen esitys)", ordered:true, items:["Vaatimusmäärittely","Suunnittelu","Toteutus","Testaus","Käyttöönotto"]},
+ {p:"II", name:"Tuotteen tyypillinen kulku Bostonin matriisissa", ordered:true, items:["Kysymysmerkki","Tähti","Lypsylehmä","Koira"]},
+ {p:"V", name:"Uppsala-teorian eteneminen", ordered:true, items:["Satunnainen vienti","Vienti agentin kautta","Oma myyntiyhtiö","Oma tuotanto kohdemaassa"]},
+
+ {p:"I", name:"VUCA", items:["Epävakaus","Epävarmuus","Monimutkaisuus","Monitulkintaisuus"]},
+ {p:"I", name:"Teal-organisaation periaatteet", items:["Itseohjautuvuus","Ihminen kokonaisuutena","Kehittyvä tarkoitus"]},
+ {p:"I", name:"Mintzbergin johtajan roolit", items:["Ihmissuhderoolit","Tiedonkäsittelijän roolit","Päätöksentekoroolit"]},
+ {p:"I", name:"Johtamisen kompetenssit", items:["Kognitiiviset taidot","Ihmissuhdetaidot","Liiketoimintataidot","Strategiset taidot"]},
+ {p:"II", name:"SWOT", items:["Vahvuudet","Heikkoudet","Mahdollisuudet","Uhat"]},
+ {p:"II", name:"PESTE", items:["Poliittiset tekijät","Ekonomiset tekijät","Sosiaaliset tekijät","Teknologiset tekijät","Ekologiset tekijät"]},
+ {p:"II", name:"Porterin viisi kilpailuvoimaa", items:["Alan sisäinen kilpailu","Uusien tulokkaiden uhka","Korvaavien tuotteiden uhka","Ostajien neuvotteluvoima","Toimittajien neuvotteluvoima"]},
+ {p:"II", name:"Porterin peruskilpailustrategiat", items:["Kustannusjohtajuus","Differointi","Keskittyminen"]},
+ {p:"II", name:"Treacyn ja Wierseman positiointiteoria", items:["Operatiivinen erinomaisuus","Asiakaskeskeisyys","Tuotejohtajuus"]},
+ {p:"II", name:"Milesin ja Snow'n strategiatypologia", items:["Puolustaja","Etsijä","Analysoija","Reagoija"]},
+ {p:"II", name:"Bostonin matriisi", items:["Tähdet","Lypsylehmät","Kysymysmerkit","Koirat"]},
+ {p:"II", name:"Ansoffin matriisi", items:["Markkinapenetraatio","Markkinakehitys","Tuotekehitys","Diversifiointi"]},
+ {p:"II", name:"Liiketoimintakanvaasi", items:["Arvolupaus","Asiakasryhmät","Asiakassuhteet","Jakelukanavat","Resurssit","Toiminnot","Kumppanit","Kulurakenne","Tulovirrat"]},
+ {p:"II", name:"Barnesin viiden E:n malli", items:["Asiakkaan ympäristö","Asiakkaan odotukset","Asiakkaan tunteet","Asiakkaan kokemukset","Asiakkaan sitoutuminen"]},
+ {p:"II", name:"4P-malli", items:["Tuote","Hinta","Saatavuus","Markkinointiviestintä"]},
+ {p:"II", name:"VRIO", items:["Arvokkuus (Value)","Harvinaisuus (Rarity)","Vaikea jäljiteltävyys (Imitability)","Organisoituminen (Organization)"]},
+ {p:"II", name:"Yhteistyösuhteiden pääoma", items:["Rakenteellinen pääoma","Relationaalinen pääoma","Kognitiivinen pääoma"]},
+ {p:"III", name:"Thomas–Kilmannin konfliktityylit", items:["Kilpailu","Yhteistyö","Kompromissi","Välttely","Mukautuminen"]},
+ {p:"III", name:"Hackmanin ja Oldhamin työn piirteet", items:["Työn edellyttämät tiedot ja taidot","Tehtäväkokonaisuus","Tehtävän vaikuttavuus","Työn autonomisuus","Työtehtävästä saatava palaute"]},
+ {p:"III", name:"Tasapainotetun tuloskortin näkökulmat", items:["Taloudellinen näkökulma","Asiakasnäkökulma","Prosessinäkökulma","Oppimisen ja kehittymisen näkökulma"]},
+ {p:"III", name:"Osaamisen hankinnan keinot", items:["Kehitetään","Ostetaan","Lainataan","Sitoutetaan","Siirretään"]},
+ {p:"III", name:"Lean-työkaluja", items:["Kaizen","Kanban","Six Sigma","5S"]},
+ {p:"III", name:"Hankintatoimen tuoteryhmät (logistiikka)", items:["Volyymituotteet","Rutiinituotteet","Kriittiset tuotteet","Strategiset tuotteet"]},
+ {p:"IV", name:"Atkinsonin joustavuuden muodot", items:["Toiminnallinen joustavuus","Määrällinen joustavuus","Taloudellinen joustavuus"]},
+ {p:"IV", name:"McClellandin suoritusmotivaatioteoria", items:["Suoritustarve","Valtatarve","Liittymistarve"]},
+ {p:"IV", name:"Ryanin ja Decin itseohjautuvuusteorian perustarpeet", items:["Autonomia","Kyvykkyys","Yhteenkuuluvuus"]},
+ {p:"IV", name:"Vroomin odotusarvoteoria", items:["Odotus","Välineellisyys","Valenssi"]},
+ {p:"IV", name:"Scheinin ura-ankkurit", items:["Autonomia ja itsenäisyys","Turvallisuus ja pysyvyys","Haasteellisuus","Palvelemisen halu","Ammatillinen pätevyys","Johtajuus","Luovuus ja yrittäjyys","Elämäntyyli"]},
+ {p:"IV", name:"Belbinin tiimiroolit", items:["Mahdollisuuksien etsijä","Tiimipeluri","Koordinaattori","Luova pohtija","Arvioija","Asiantuntija","Vauhdittaja","Toteuttaja","Viimeistelijä"]},
+ {p:"IV", name:"Blaken ja Moutonin johtamistyylit", items:["9/1 autoritäärinen johtaminen","1/9 hyväntahtoinen johtaminen","1/1 piittaamaton johtaminen","5/5 säilyttävä keskitien kulkija","9/9 tehokas johtaminen"]},
+ {p:"IV", name:"Argyrisin ja Schönin muutosoppiminen", items:["Pintaoppiminen","Syvätason oppiminen","Oppimaan oppiminen"]},
+ {p:"IV", name:"Sengen oppiva organisaatio", items:["Henkilökohtainen mestaruus","Yhteiset ajatusmallit","Jaettu visio","Tiimioppiminen","Systeemiajattelu"]},
+ {p:"V", name:"Hofsteden kulttuuriulottuvuudet", items:["Individualismi – kollektiivisuus","Hierarkkisuus – tasa-arvo","Epävarmuuden välttäminen – hyväksyminen","Maskuliinisuus – feminiinisyys","Pitkä – lyhyt aikaväli"]},
+ {p:"V", name:"Trompenaarsin ja Hampden-Turnerin malli", items:["Universalismi – partikularismi","Yksilöllisyys – kollektiivisuus","Neutraalisuus – tunteellisuus","Spesifisyys – diffuusio","Saavuttaminen – ansioituminen","Sekventaalinen – synkroninen aika","Ympäristön kontrollointi – sopeutuminen"]},
+ {p:"V", name:"Kansainvälinen orientaatio", items:["Kotimaaorientaatio","Kohdemaaorientaatio","Alueellinen orientaatio","Globaali orientaatio"]},
+ {p:"V", name:"Kolmoistilinpäätös", items:["Taloudellinen vastuu","Sosiaalinen vastuu","Ympäristövastuu"]},
+ {p:"V", name:"Yritysvastuun standardit ja periaatteet", items:["Global Compact","ISO 14001","EMAS","OHSAS 18001"]}
+];
+
+// ---------- VERTAILUPARIT ----------
+const PAIRS = [
+ {p:"IV", a:"Transaktionaalinen johtajuus", b:"Transformationaalinen johtajuus", s:[
+   ["Palkitsee sovituista suorituksista","a"],["Puuttuu poikkeamiin ja virheisiin","a"],["Perustuu vaihtosuhteeseen: tulos vastaan palkkio","a"],
+   ["Innostaa yhteisellä visiolla","b"],["Toimii esikuvana","b"],["Haastaa ajattelemaan uudella tavalla","b"],["Tukee jokaista yksilöllisesti","b"]]},
+ {p:"IV", a:"Herzberg: hygieniatekijä", b:"Herzberg: motivaatiotekijä", s:[
+   ["Palkka","a"],["Työolot","a"],["Esimiehen valvonta","a"],["Yrityksen politiikka ja hallinto","a"],["Työsuhteen turvallisuus","a"],
+   ["Saavutukset","b"],["Tunnustus","b"],["Vastuu","b"],["Itse työ","b"],["Eteneminen ja kasvu","b"]]},
+ {p:"IV", a:"McGregorin X-teoria", b:"McGregorin Y-teoria", s:[
+   ["Ihmiset välttelevät työtä, jos voivat","a"],["Työntekijöitä on valvottava tarkasti","a"],["Ihmiset välttelevät vastuuta","a"],
+   ["Ihmiset haluavat ottaa vastuuta","b"],["Ihmiset kykenevät itseohjautuvuuteen","b"],["Työ voi olla yhtä luontevaa kuin leikki","b"]]},
+ {p:"IV", a:"Sisäinen motivaatio", b:"Ulkoinen motivaatio", s:[
+   ["Tekemisen ilo","a"],["Kiinnostus itse tehtävään","a"],["Kokemus omasta kehittymisestä","a"],
+   ["Tulospalkkio","b"],["Rangaistuksen pelko","b"],["Ylennys","b"]]},
+ {p:"I", a:"Asemavalta", b:"Henkilökohtainen valta", s:[
+   ["Oikeus palkita","a"],["Oikeus rangaista","a"],["Muodollinen asema ja titteli","a"],
+   ["Asiantuntemus","b"],["Karisma","b"],["Muiden arvostus ja luottamus","b"]]},
+ {p:"I", a:"Asioiden johtaminen (management)", b:"Ihmisten johtaminen (leadership)", s:[
+   ["Budjetointi","a"],["Resurssien suunnittelu","a"],["Prosessien ja tulosten seuranta","a"],
+   ["Innostaminen","b"],["Suunnan näyttäminen ja vision viestiminen","b"],["Luottamuksen rakentaminen","b"]]},
+ {p:"I", a:"Strateginen johtaminen", b:"Operatiivinen johtaminen", s:[
+   ["Pitkän aikavälin suunnan valinta","a"],["Kilpailuedun rakentaminen","a"],["Vision ja päämäärien määrittäminen","a"],
+   ["Päivittäisen työn organisointi","b"],["Työvuorojen suunnittelu","b"],["Strategian toimeenpano arjessa","b"]]},
+ {p:"I", a:"Autoritäärinen johtajuus", b:"Demokraattinen johtajuus", s:[
+   ["Johtaja päättää yksin","a"],["Ohjaus tapahtuu käskyin","a"],
+   ["Työntekijät osallistuvat päätöksiin","b"],["Päätöksiä valmistellaan yhdessä","b"]]},
+ {p:"II", a:"Missio", b:"Visio", s:[
+   ["Miksi organisaatio on olemassa","a"],["Organisaation perustehtävä","a"],
+   ["Tavoiteltu tulevaisuuden tila","b"],["Mihin organisaatio haluaa päästä","b"]]},
+ {p:"II", a:"SWOT: sisäinen tekijä", b:"SWOT: ulkoinen tekijä", s:[
+   ["Osaava henkilöstö","a"],["Vanhentunut tuotantolaitteisto","a"],["Vahva brändi","a"],["Heikko kassatilanne","a"],
+   ["Uusi lainsäädäntö","b"],["Kilpailijan tulo markkinoille","b"],["Kysynnän kasvu","b"],["Korkotason nousu","b"]]},
+ {p:"II", a:"Punainen meri", b:"Sininen meri", s:[
+   ["Kilpaillaan nykyisistä asiakkaista","a"],["Hintakilpailu kiristyy","a"],
+   ["Luodaan uutta kysyntää","b"],["Kilpailu menettää merkityksensä","b"]]},
+ {p:"II", a:"Avoin innovaatio", b:"Suljettu innovaatio", s:[
+   ["Kehitetään yhdessä asiakkaiden ja kumppanien kanssa","a"],["Ulkopuolisia ideoita hyödynnetään aktiivisesti","a"],
+   ["Kaikki kehitystyö tehdään omassa tutkimusyksikössä","b"],["Ideat pidetään tiukasti organisaation sisällä","b"]]},
+ {p:"III", a:"Hajauttaminen", b:"Keskittäminen", s:[
+   ["Päätökset tehdään lähellä asiakasta","a"],["Nopea paikallinen reagointi","a"],["Riskinä osaoptimointi","a"],
+   ["Yhtenäiset käytännöt koko organisaatiossa","b"],["Päätösvalta ylimmällä johdolla","b"],["Mittakaavaedut hallinnossa","b"]]},
+ {p:"III", a:"Työn rikastaminen", b:"Työn laajentaminen", s:[
+   ["Työhön lisätään suunnittelu- ja päätösvaltaa","a"],["Vertikaalinen muutos","a"],["Vastuu lisääntyy","a"],
+   ["Lisätään samantasoisia tehtäviä","b"],["Horisontaalinen muutos","b"]]},
+ {p:"III", a:"Hiljainen tieto", b:"Näkyvä tieto", s:[
+   ["Kokemukseen perustuva taito","a"],["Vaikea sanallistaa","a"],["Siirtyy parhaiten mentoroinnissa","a"],
+   ["Käsikirjat ja ohjeet","b"],["Tietojärjestelmiin tallennettu data","b"]]},
+ {p:"III", a:"Vesiputousmalli", b:"Ketterä kehitys", s:[
+   ["Vaiheet etenevät peräkkäin","a"],["Vaatimukset lyödään lukkoon alussa","a"],
+   ["Lyhyet sprintit","b"],["Jatkuva palaute ja iterointi","b"],["Scrum","b"]]},
+ {p:"III", a:"Kiinteä kustannus", b:"Muuttuva kustannus", s:[
+   ["Toimitilan vuokra","a"],["Poistot","a"],["Toimihenkilöiden kuukausipalkat","a"],
+   ["Raaka-aineet","b"],["Pakkausmateriaalit","b"],["Kappaleperusteiset rahtikulut","b"]]},
+ {p:"III", a:"Sisäinen (johdon) laskentatoimi", b:"Ulkoinen laskentatoimi", s:[
+   ["Tuotekohtaiset kannattavuuslaskelmat","a"],["Budjetit","a"],["Investointilaskelmat","a"],
+   ["Kirjanpito","b"],["Tilinpäätös","b"],["Raportointi sijoittajille ja viranomaisille","b"]]},
+ {p:"III", a:"Kannattavuus", b:"Tuottavuus", s:[
+   ["Tuotot suhteessa kustannuksiin","a"],["Liiketoiminnan tulos","a"],
+   ["Tuotos suhteessa panoksiin","b"],["Tuotettuja kappaleita työtuntia kohden","b"]]},
+ {p:"IV", a:"Pintaoppiminen (yksikehäinen)", b:"Syvätason oppiminen (kaksikehäinen)", s:[
+   ["Virhe korjataan ja jatketaan samaan tapaan","a"],["Toimintatapoja hiotaan","a"],
+   ["Kyseenalaistetaan toiminnan taustaoletukset","b"],["Muutetaan toimintaa ohjaavia arvoja","b"]]},
+ {p:"IV", a:"Organisaatiokulttuuri", b:"Ilmapiiri", s:[
+   ["Syvät perusoletukset","a"],["Muuttuu hitaasti","a"],["Kehittyy vuosien kuluessa","a"],
+   ["Työyhteisön tämänhetkinen tunnelma","b"],["Voi muuttua nopeasti","b"],["Mitataan usein ilmapiirikyselyllä","b"]]},
+ {p:"IV", a:"Atkinson: ydinryhmä", b:"Atkinson: perifeerinen ryhmä", s:[
+   ["Vakituinen, monitaitoinen henkilöstö","a"],["Toiminnallinen joustavuus","a"],
+   ["Vuokratyöntekijät","b"],["Määräaikaiset","b"],["Määrällinen joustavuus","b"]]},
+ {p:"V", a:"Hofsteden malli", b:"Trompenaarsin ja Hampden-Turnerin malli", s:[
+   ["Valtaetäisyys (hierarkkisuus – tasa-arvo)","a"],["Maskuliinisuus – feminiinisyys","a"],["Epävarmuuden välttäminen","a"],["Pitkä – lyhyt aikaväli","a"],
+   ["Universalismi – partikularismi","b"],["Neutraalisuus – tunteellisuus","b"],["Spesifisyys – diffuusio","b"],["Saavuttaminen – ansioituminen","b"],["Sekventaalinen – synkroninen aika","b"]]},
+ {p:"V", a:"Orgaaninen kasvu", b:"Epäorgaaninen kasvu", s:[
+   ["Myynnin kasvattaminen omin voimin","a"],["Uudet tuotteet omasta tuotekehityksestä","a"],
+   ["Yritysosto","b"],["Fuusio","b"]]},
+ {p:"V", a:"Ekspatriaatti", b:"Inpatriaatti", s:[
+   ["Emoyhtiöstä ulkomaille lähetetty työntekijä","a"],
+   ["Tytäryhtiöstä emoyhtiön maahan siirretty työntekijä","b"]]},
+ {p:"V", a:"Uppsala-teoria", b:"Kansainvälisen yrittäjyyden teoria (born global)", s:[
+   ["Eteneminen vaiheittain","a"],["Ensin kulttuurisesti läheiset markkinat","a"],
+   ["Kansainvälinen heti perustamisesta","b"],["Nopea eteneminen monille markkinoille","b"]]},
+ {p:"V", a:"Proaktiivinen kansainvälistyminen", b:"Reaktiivinen kansainvälistyminen", s:[
+   ["Yritys hakeutuu ulkomaille omasta aloitteestaan","a"],["Kasvutavoitteet ja uudet mahdollisuudet","a"],
+   ["Ulkomainen asiakas ottaa yhteyttä","b"],["Kotimarkkinoiden kyllästyminen pakottaa","b"]]},
+ {p:"V", a:"Uusi julkisjohtaminen (NPM)", b:"Uusi julkinen hallinta", s:[
+   ["Tulosjohtaminen ja tehokkuus","a"],["Kilpailuttaminen","a"],["Yksityisen sektorin opit","a"],
+   ["Verkostot ja yhteistyö","b"],["Kansalaisten osallistaminen","b"],["Yhteinen arvonluonti","b"]]}
+];
+
+// ---------- logiikka ----------
+const REINSERT_AFTER = 4;
+const state = { mode:"cards", dir:"term", rev:false, deck:"all", src:"data", queue:[], current:null, flipped:false, answered:false, mastered:new Set(), missed:new Set(), wrongCount:0, total:0, retries:{} };
+const $ = s => document.querySelector(s);
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const inDeck = p => state.deck==="all" || p===state.deck;
+
+// Vertailuparien väittämät yhdeksi listaksi
+const PAIR_ITEMS = [];
+PAIRS.forEach((pr,pi)=>pr.s.forEach(([text,ans])=>PAIR_ITEMS.push({pi,text,ans})));
+
+function srcFor(mode){ return mode==="models"?"models":mode==="pairs"?"pairs":"data"; }
+function pool(){
+  if(state.src==="models") return MODELS.map((m,i)=>i).filter(i=>inDeck(MODELS[i].p));
+  if(state.src==="pairs") return PAIR_ITEMS.map((x,i)=>i).filter(i=>inDeck(PAIRS[PAIR_ITEMS[i].pi].p));
+  return DATA.map((d,i)=>i).filter(i=>inDeck(DATA[i][0]));
+}
+function labelOf(i){
+  if(state.src==="models") return MODELS[i].name;
+  if(state.src==="pairs"){ const it=PAIR_ITEMS[i]; const pr=PAIRS[it.pi]; return `${it.text} → ${it.ans==="a"?pr.a:pr.b}`; }
+  return DATA[i][1];
+}
+function partOf(i){
+  if(state.src==="models") return MODELS[i].p;
+  if(state.src==="pairs") return PAIRS[PAIR_ITEMS[i].pi].p;
+  return DATA[i][0];
+}
+
+function start(){
+  state.src = srcFor(state.mode);
+  const ids = shuffle(pool());
+  Object.assign(state,{queue:ids,current:null,mastered:new Set(),missed:new Set(),wrongCount:0,total:ids.length,retries:{}});
+  next();
+}
+
+function pickDir(){
+  state.rev = state.dir==="def" ? true : state.dir==="mix" ? Math.random()<0.5 : false;
+}
+
+let mcCache = null, modelTask = null;
+function next(){
+  state.flipped=false; state.answered=false; mcCache=null; modelTask=null;
+  state.current = state.queue.length ? state.queue.shift() : null;
+  pickDir();
+  render();
+}
+
+function mark(correct){
+  const id = state.current;
+  if(correct){ state.mastered.add(id); }
+  else{
+    state.missed.add(id); state.wrongCount++;
+    state.retries[id]=(state.retries[id]||0)+1;
+    state.queue.splice(Math.min(REINSERT_AFTER, state.queue.length), 0, id);
+  }
+}
+
+function renderStats(){
+  const pct = state.total ? Math.round(state.mastered.size/state.total*100) : 0;
+  const unit = state.src==="models"?"mallia":state.src==="pairs"?"väittämää":"korttia";
+  $("#stats").innerHTML = `<span>Osattu <b>${state.mastered.size}/${state.total}</b> ${unit}</span><span>Jonossa <b>${state.queue.length + (state.current!==null?1:0)}</b></span><span>Virheitä <b>${state.wrongCount}</b></span><span>Ensimmäisellä oikein <b>${state.mastered.size - [...state.mastered].filter(i=>state.missed.has(i)).length}</b></span>`;
+  $("#bar").style.width = pct+"%";
+}
+
+function tagHtml(id){
+  const r = state.retries[id];
+  return `<span class="tag">${esc(PARTS[partOf(id)])}</span>${r?`<span class="retry">Uusinta ×${r}</span>`:""}`;
+}
+
+let readQuery = "";
+function renderRead(){
+  $("#stats").style.display="none"; $(".bar").style.display="none"; $("#shuffle").style.display="none";
+  const keys = Object.keys(PARTS).filter(k=>state.deck==="all"||k===state.deck);
+  const q = readQuery.trim().toLowerCase();
+  const sections = keys.map(k=>{
+    const rows = DATA.filter(d=>d[0]===k && (!q || (d[1]+" "+d[2]).toLowerCase().includes(q)));
+    if(!rows.length) return "";
+    return `<h2 id="osa-${k}">${esc(PARTS[k])} <span style="font-weight:400;color:var(--muted);font-size:.9rem">(${rows.length})</span></h2>
+      <dl>${rows.map(d=>`<div class="row"><dt>${esc(d[1])}</dt><dd>${esc(d[2])}</dd></div>`).join("")}</dl>`;
+  }).join("");
+  const toc = keys.length>1 ? `<div class="toc">${keys.map(k=>`<a href="#osa-${k}">${esc(PARTS[k].replace(/^[IV]+ /,""))}</a>`).join("")}</div>` : "";
+  $("#stage").innerHTML = `<div class="read">
+    <div class="controls" style="margin-top:0"><input class="search" id="search" type="search" placeholder="Hae käsitettä tai sanaa selityksestä…" value="${esc(readQuery)}"></div>
+    ${toc}${sections || `<p class="empty">Ei osumia haulla ”${esc(readQuery)}”.</p>`}</div>`;
+  const inp = $("#search");
+  inp.oninput = ()=>{ readQuery = inp.value; const pos = inp.selectionStart; renderRead(); const n=$("#search"); n.focus(); n.setSelectionRange(pos,pos); };
+}
+
+function render(){
+  $("#dirSeg").style.display = (state.mode==="cards"||state.mode==="mc") ? "" : "none";
+  if(state.mode==="read") return renderRead();
+  $("#stats").style.display=""; $(".bar").style.display=""; $("#shuffle").style.display="";
+  renderStats();
+  const st = $("#stage");
+  if(state.current===null){
+    const hard = [...state.missed].sort((a,b)=>(state.retries[b]||0)-(state.retries[a]||0));
+    if(!state.total){ st.innerHTML = `<div class="card done"><p>Tässä aihealueessa ei ole tämän harjoituksen tehtäviä. Valitse toinen aihealue.</p></div>`; return; }
+    st.innerHTML = `<div class="card done"><h2>Kierros läpi! 🎉</h2>
+      <p>Osasit kaikki ${state.total}. Virheitä matkalla: ${state.wrongCount}.</p>
+      ${hard.length?`<div class="list"><b>Nämä menivät ainakin kerran väärin:</b><br>${hard.map(i=>esc(labelOf(i))+(state.retries[i]>1?` (×${state.retries[i]})`:"")).join(" · ")}</div>`:""}
+      <div class="actions" style="justify-content:center"><button class="btn primary" onclick="start()">Sekoita ja aloita uudelleen</button>
+      ${hard.length?`<button class="btn" onclick="practiceMissed()">Harjoittele vain virheet</button>`:""}</div></div>`;
+    return;
+  }
+  if(state.mode==="cards") renderCard();
+  else if(state.mode==="mc") renderMC();
+  else if(state.mode==="models") renderModel();
+  else if(state.mode==="pairs") renderPair();
+}
+
+function renderCard(){
+  const [part,term,def] = DATA[state.current];
+  const front = state.rev
+    ? `<div class="hint" style="margin-top:0">Mikä käsite tai malli?</div><div class="term" style="font-size:1.2rem;font-weight:500">”${esc(def)}”</div>`
+    : `<div class="term">${esc(term)}</div>`;
+  const back = state.rev ? `<div class="def"><b style="font-size:1.3rem">${esc(term)}</b></div>` : `<div class="def">${esc(def)}</div>`;
+  $("#stage").innerHTML = `<div class="card flip" id="fc">${tagHtml(state.current)}
+    ${front}
+    ${state.flipped?back:`<div class="hint">${state.rev?"Mieti termi":"Mieti selitys"} ja käännä kortti klikkaamalla tai välilyönnillä.</div>`}
+    </div>
+    <div class="actions">${state.flipped
+      ?`<button class="btn good" id="ok">✓ Osasin (1)</button><button class="btn bad" id="no">✗ En osannut (2)</button>`
+      :`<button class="btn primary" id="flipBtn">Käännä kortti</button>`}</div>`;
+  $("#fc").onclick = ()=>{ if(!state.flipped){state.flipped=true;render();} };
+  if(state.flipped){ $("#ok").onclick=()=>{mark(true);next();}; $("#no").onclick=()=>{mark(false);next();}; }
+  else $("#flipBtn").onclick=()=>{state.flipped=true;render();};
+}
+
+function buildMC(id){
+  const reverse = state.rev;
+  const same = DATA.map((d,i)=>i).filter(i=>i!==id && DATA[i][0]===DATA[id][0]);
+  const others = DATA.map((d,i)=>i).filter(i=>i!==id && DATA[i][0]!==DATA[id][0]);
+  let distract = shuffle(same).slice(0,3);
+  if(distract.length<3) distract = distract.concat(shuffle(others).slice(0,3-distract.length));
+  return {id,reverse,opts:shuffle([id,...distract]),choice:null};
+}
+function renderMC(){
+  if(!mcCache || mcCache.id!==state.current || mcCache.reverse!==state.rev) mcCache = buildMC(state.current);
+  const m = mcCache; const [part,term,def] = DATA[m.id];
+  const q = m.reverse
+    ? `Mikä käsite tai malli on kyseessä?<div class="big" style="font-weight:500;margin-top:8px">”${esc(def)}”</div>`
+    : `Mitä tarkoittaa<div class="big">${esc(term)}</div>`;
+  const label = i => m.reverse ? DATA[i][1] : DATA[i][2];
+  $("#stage").innerHTML = `<div class="card">${tagHtml(m.id)}<div class="q">${q}</div>
+    <div class="opts">${m.opts.map((i,k)=>{
+      let cls="opt"; if(state.answered){ if(i===m.id) cls+=" correct"; else if(i===m.choice) cls+=" wrong"; }
+      return `<button class="${cls}" data-i="${i}" ${state.answered?"disabled":""}><b>${k+1}.</b> ${esc(label(i))}</button>`;}).join("")}</div>
+    ${state.answered?`<div class="feedback ${m.choice===m.id?"ok":"no"}">${m.choice===m.id?"✓ Oikein!":`✗ Väärin – oikea vastaus: <b>${esc(m.reverse?term:def)}</b>. Kysymys tulee uudelleen ${REINSERT_AFTER} kortin päästä.`}</div>
+      <div class="actions"><button class="btn primary" id="nextBtn">Seuraava (Enter)</button></div>`:""}
+  </div>`;
+  document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answerMC(+b.dataset.i));
+  if(state.answered) $("#nextBtn").onclick=next;
+}
+function answerMC(i){
+  if(state.answered) return;
+  mcCache.choice=i; state.answered=true;
+  mark(i===mcCache.id);
+  render();
+}
+
+// ---------- mallitehtävät ----------
+function buildModelTask(id){
+  const m = MODELS[id];
+  const types = m.ordered ? ["order","order","missing","identify"] : ["odd","missing","identify"];
+  const type = types[Math.floor(Math.random()*types.length)];
+  const allOther = MODELS.filter((x,i)=>i!==id).flatMap(x=>x.items).filter(t=>!m.items.includes(t));
+  if(type==="order") return {type, id, shuffled:shuffle(m.items), picked:[], wrongAt:-1};
+  if(type==="odd"){ // mikä ei kuulu
+    const keep = shuffle(m.items).slice(0, Math.min(3, m.items.length));
+    const intruder = shuffle(allOther)[0];
+    return {type, id, opts:shuffle([...keep,intruder]), correct:intruder, choice:null};
+  }
+  if(type==="missing"){ // mikä puuttuu listasta
+    const miss = shuffle(m.items)[0];
+    const shown = m.items.filter(t=>t!==miss);
+    const opts = shuffle([miss, ...shuffle(allOther).slice(0,3)]);
+    return {type, id, shown, opts, correct:miss, choice:null};
+  }
+  // identify: mikä malli
+  const sameP = MODELS.map((x,i)=>i).filter(i=>i!==id && MODELS[i].p===m.p);
+  const rest = MODELS.map((x,i)=>i).filter(i=>i!==id && MODELS[i].p!==m.p);
+  let d = shuffle(sameP).slice(0,3); if(d.length<3) d=d.concat(shuffle(rest).slice(0,3-d.length));
+  return {type, id, shown:shuffle(m.items), opts:shuffle([id,...d]).map(i=>MODELS[i].name), correct:m.name, choice:null};
+}
+function renderModel(){
+  if(!modelTask || modelTask.id!==state.current) modelTask = buildModelTask(state.current);
+  const t = modelTask, m = MODELS[t.id];
+  let body = "";
+  if(t.type==="order"){
+    const done = state.answered;
+    body = `<div class="q">Järjestä oikeaan järjestykseen:<div class="big">${esc(m.name)}</div></div>
+      <div class="hint" style="margin:0 0 10px">Klikkaa osia siinä järjestyksessä, jossa ne tulevat.</div>
+      <ol class="picked">${t.picked.map((x,k)=>`<li class="${t.wrongAt===k?"bad":"ok"}">${esc(x)}</li>`).join("")}</ol>
+      ${done?"":`<div class="opts">${t.shuffled.filter(x=>!t.picked.includes(x)).map(x=>`<button class="opt" data-v="${esc(x)}">${esc(x)}</button>`).join("")}</div>`}
+      ${done?`<div class="feedback ${t.wrongAt<0?"ok":"no"}">${t.wrongAt<0?"✓ Oikea järjestys!":`✗ Väärä järjestys. Oikein:`}</div>
+        ${t.wrongAt<0?"":`<ol class="picked">${m.items.map(x=>`<li class="ok">${esc(x)}</li>`).join("")}</ol><div class="hint">Tehtävä tulee uudelleen ${REINSERT_AFTER} tehtävän päästä.</div>`}`:""}`;
+  } else {
+    let q = "";
+    if(t.type==="odd") q = `Mikä EI kuulu malliin?<div class="big">${esc(m.name)}</div>`;
+    if(t.type==="missing") q = `Mikä osa puuttuu?<div class="big">${esc(m.name)}</div><ul class="shown">${t.shown.map(x=>`<li>${esc(x)}</li>`).join("")}<li><i>???</i></li></ul>`;
+    if(t.type==="identify") q = `Mistä mallista on kyse?<ul class="shown">${t.shown.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+    body = `<div class="q">${q}</div><div class="opts">${t.opts.map((o,k)=>{
+        let cls="opt"; if(state.answered){ if(o===t.correct) cls+=" correct"; else if(o===t.choice) cls+=" wrong"; }
+        return `<button class="${cls}" data-v="${esc(o)}" ${state.answered?"disabled":""}><b>${k+1}.</b> ${esc(o)}</button>`;}).join("")}</div>
+      ${state.answered?`<div class="feedback ${t.choice===t.correct?"ok":"no"}">${t.choice===t.correct?"✓ Oikein!":`✗ Väärin – oikea vastaus: <b>${esc(t.correct)}</b>. Tehtävä tulee uudelleen ${REINSERT_AFTER} tehtävän päästä.`}</div>
+        <div class="hint"><b>${esc(m.name)}:</b> ${m.items.map(esc).join(m.ordered?" → ":" · ")}</div>`:""}`;
+  }
+  $("#stage").innerHTML = `<div class="card">${tagHtml(t.id)}${body}
+    ${state.answered?`<div class="actions"><button class="btn primary" id="nextBtn">Seuraava (Enter)</button></div>`:""}</div>`;
+  document.querySelectorAll(".opt:not([disabled])").forEach(b=>b.onclick=()=>answerModel(b.dataset.v));
+  if(state.answered) $("#nextBtn").onclick=next;
+}
+function answerModel(v){
+  const t = modelTask, m = MODELS[t.id];
+  if(state.answered) return;
+  if(t.type==="order"){
+    const k = t.picked.length;
+    t.picked.push(v);
+    if(v!==m.items[k]){ t.wrongAt=k; state.answered=true; mark(false); }
+    else if(t.picked.length===m.items.length){ state.answered=true; mark(true); }
+  } else {
+    t.choice=v; state.answered=true; mark(v===t.correct);
+  }
+  render();
+}
+
+// ---------- vertailuparit ----------
+function renderPair(){
+  const it = PAIR_ITEMS[state.current], pr = PAIRS[it.pi];
+  const ok = state.answered && state.pairChoice===it.ans;
+  const btn = (key,label,n)=>{ let cls="opt"; if(state.answered){ if(key===it.ans) cls+=" correct"; else if(key===state.pairChoice) cls+=" wrong"; }
+    return `<button class="${cls}" data-k="${key}" ${state.answered?"disabled":""}><b>${n}.</b> ${esc(label)}</button>`; };
+  $("#stage").innerHTML = `<div class="card">${tagHtml(state.current)}
+    <div class="q">Kumpaan kuuluu?<div class="big">”${esc(it.text)}”</div></div>
+    <div class="opts pair">${btn("a",pr.a,1)}${btn("b",pr.b,2)}</div>
+    ${state.answered?`<div class="feedback ${ok?"ok":"no"}">${ok?"✓ Oikein!":`✗ Väärin – oikea vastaus: <b>${esc(it.ans==="a"?pr.a:pr.b)}</b>. Väittämä tulee uudelleen ${REINSERT_AFTER} tehtävän päästä.`}</div>
+      <div class="hint"><b>${esc(pr.a)}:</b> ${pr.s.filter(x=>x[1]==="a").map(x=>esc(x[0])).join(" · ")}<br><b>${esc(pr.b)}:</b> ${pr.s.filter(x=>x[1]==="b").map(x=>esc(x[0])).join(" · ")}</div>
+      <div class="actions"><button class="btn primary" id="nextBtn">Seuraava (Enter)</button></div>`:""}
+  </div>`;
+  document.querySelectorAll(".opt:not([disabled])").forEach(b=>b.onclick=()=>answerPair(b.dataset.k));
+  if(state.answered) $("#nextBtn").onclick=next;
+}
+function answerPair(k){
+  if(state.answered) return;
+  state.pairChoice=k; state.answered=true;
+  mark(k===PAIR_ITEMS[state.current].ans);
+  render();
+}
+
+function practiceMissed(){
+  const ids = shuffle([...state.missed]);
+  Object.assign(state,{queue:ids,current:null,mastered:new Set(),missed:new Set(),wrongCount:0,total:ids.length,retries:{}});
+  next();
+}
+
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="SELECT" || e.target.tagName==="INPUT") return;
+  if(state.mode==="read" || state.current===null) return;
+  if(state.answered && e.key==="Enter"){ e.preventDefault(); next(); return; }
+  if(state.mode==="cards"){
+    if(e.key===" "){ e.preventDefault(); if(!state.flipped){state.flipped=true;render();} }
+    else if(state.flipped && e.key==="1"){ mark(true); next(); }
+    else if(state.flipped && e.key==="2"){ mark(false); next(); }
+  } else if(state.mode==="mc"){
+    if(!state.answered && /^[1-4]$/.test(e.key)){ const i=mcCache.opts[+e.key-1]; if(i!==undefined) answerMC(i); }
+  } else if(state.mode==="pairs"){
+    if(!state.answered && (e.key==="1"||e.key==="2")) answerPair(e.key==="1"?"a":"b");
+  } else if(state.mode==="models"){
+    if(!state.answered && modelTask && modelTask.type!=="order" && /^[1-4]$/.test(e.key)){ const v=modelTask.opts[+e.key-1]; if(v!==undefined) answerModel(v); }
+  }
+});
+
+// asetukset
+const sel = $("#deck");
+sel.innerHTML = `<option value="all">Kaikki aihealueet</option>` +
+  Object.keys(PARTS).map(k=>`<option value="${k}">${PARTS[k]}</option>`).join("");
+sel.onchange = ()=>{ state.deck=sel.value; start(); };
+$("#shuffle").onclick = ()=>start();
+document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  const prevSrc = state.src;
+  state.mode=b.dataset.mode; state.flipped=false; state.answered=false; mcCache=null; modelTask=null;
+  if(state.mode==="read"){ render(); return; }
+  if(srcFor(state.mode)!==prevSrc || state.current===null && state.queue.length===0) start(); else render();
+});
+document.querySelectorAll("#dirSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#dirSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  state.dir=b.dataset.dir; pickDir(); state.flipped=false; state.answered=false; mcCache=null; render();
+});
+
+start();
+</script>
+</body>
+</html>
